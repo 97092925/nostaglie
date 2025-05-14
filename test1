@@ -1,0 +1,66 @@
+import os
+
+def opslaan_originele_namen(bestanden, map_naam):
+    pad = os.path.join(map_naam, "originele_namen.txt")
+    with open(pad, "w") as f:
+        for bestand in bestanden:
+            f.write(f"{bestand}\n")
+    return pad
+
+def lees_originele_namen(map_naam):
+    pad = os.path.join(map_naam, "originele_namen.txt")
+    if not os.path.exists(pad):
+        print("Geen originele bestandsnamen gevonden.")
+        return []
+    with open(pad, "r") as f:
+        return [regel.strip() for regel in f.readlines()]
+
+def hernoem_bestanden(map_naam):
+    if not os.path.isdir(map_naam):
+        print(f"De map '{map_naam}' bestaat niet.")
+        return
+
+    bestanden = [f for f in os.listdir(map_naam) if os.path.isfile(os.path.join(map_naam, f))]
+    bestanden.sort()
+    opslaan_originele_namen(bestanden, map_naam)
+
+    for i, oude_naam in enumerate(bestanden, start=1):
+        nieuwe_naam = f"movie_poster_{i:02d}" + os.path.splitext(oude_naam)[1]
+        os.rename(os.path.join(map_naam, oude_naam), os.path.join(map_naam, nieuwe_naam))
+
+    print("Bestanden zijn hernoemd met prefix 'movie_poster_'.")
+
+def herstel_bestanden(map_naam):
+    originele_namen = lees_originele_namen(map_naam)
+    huidige_bestanden = sorted([f for f in os.listdir(map_naam) if os.path.isfile(os.path.join(map_naam, f))])
+
+    if len(originele_namen) != len(huidige_bestanden):
+        print("Aantal originele en huidige bestanden komt niet overeen.")
+        return
+
+    for oude_naam, nieuwe_naam in zip(huidige_bestanden, originele_namen):
+        os.rename(os.path.join(map_naam, oude_naam), os.path.join(map_naam, nieuwe_naam))
+
+    print("Bestanden zijn teruggezet naar hun originele naam.")
+
+def main():
+    while True:
+        print("\n1. Hernoem en nummer bestanden")
+        print("2. Hernoem bestanden naar originele naam")
+        print("3. Stoppen")
+        keuze = input("Keuze? ")
+
+        if keuze == "1":
+            map_naam = input("Geef de naam van de map met afbeeldingen: ")
+            hernoem_bestanden(map_naam)
+        elif keuze == "2":
+            map_naam = input("Geef de naam van de map met afbeeldingen: ")
+            herstel_bestanden(map_naam)
+        elif keuze == "3":
+            print("Programma gestopt.")
+            break
+        else:
+            print("Ongeldige keuze. Probeer opnieuw.")
+
+if __name__ == "__main__":
+    main()
