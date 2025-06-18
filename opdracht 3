@@ -2,33 +2,37 @@ import os
 from fpdf import FPDF
 from PIL import Image
 
-def jpgs_to_pdf(source_folder, output_pdf_path):
-    pdf = FPDF(unit="pt")  # gebruik punten als eenheid (1 pt = 1/72 inch)
-    
-    # Alle JPG-bestanden in de map, gesorteerd
-    jpg_files = sorted([
-        f for f in os.listdir(source_folder)
-        if f.lower().endswith(".jpg") or f.lower().endswith(".jpeg")
-    ])
-    
+def jpgs_to_pdf(source_folder: str, output_pdf_path: str):
+    if not os.path.isdir(source_folder):
+        print(f"Fout: De map '{source_folder}' bestaat niet.")
+        return
+
+    jpg_files = sorted([f for f in os.listdir(source_folder) if f.lower().endswith((".jpg", ".jpeg"))])
+
     if not jpg_files:
-        raise ValueError("Geen JPG-bestanden gevonden in de opgegeven map.")
-    
+        print("Geen JPG-bestanden gevonden in de opgegeven map.")
+        return
+
+    pdf = FPDF(unit="pt")
+
     for jpg_file in jpg_files:
         img_path = os.path.join(source_folder, jpg_file)
-        
-        # Open afbeelding om grootte te bepalen
-        with Image.open(img_path) as img:
-            width, height = img.size
-        
-        # Voeg een pagina toe met dezelfde afmetingen als de afbeelding
-        pdf.add_page(format=(width, height))
-        
-        # Voeg de afbeelding toe op positie (0,0) en in originele grootte
-        pdf.image(img_path, x=0, y=0, w=width, h=height)
-    
-    pdf.output(output_pdf_path)
-    print(f"PDF succesvol aangemaakt: {output_pdf_path}")
+        try:
+            with Image.open(img_path) as img:
+                width, height = img.size
+                print(f"Verwerk afbeelding: {jpg_file} ({width}x{height} pixels)")
+                pdf.add_page(format=(width, height))
+                pdf.image(img_path, x=0, y=0, w=width, h=height)
+        except Exception as e:
+            print(f"Fout bij openen/verwerken van {jpg_file}: {e}")
 
-# Voorbeeld gebruik:
-# jpgs_to_pdf("/pad/naar/afbeeldingen", "/pad/naar/output.pdf")
+    try:
+        pdf.output(output_pdf_path)
+        print(f"PDF succesvol aangemaakt: {output_pdf_path}")
+    except Exception as e:
+        print(f"Fout bij opslaan PDF: {e}")
+
+if __name__ == "__main__":
+    source = input("Voer het pad naar de map met JPG-bestanden in: ").strip()
+    output = input("Voer het pad en bestandsnaam in voor de output PDF: ").strip()
+    jpgs_to_pdf(source, output)
