@@ -1,0 +1,57 @@
+import os
+from PIL import Image
+
+def resize_images():
+    source = input("Voer het pad naar de map met afbeeldingen in: ").strip()
+    destination = input("Voer het pad naar de uitvoermap in: ").strip()
+    max_size_input = input("Voer het maximale formaat van de afbeeldingen in (max 2000 pixels): ").strip()
+
+    try:
+        max_size = int(max_size_input)
+        if max_size > 2000:
+            print("Maximale formaat mag niet groter zijn dan 2000. Wordt aangepast naar 2000.")
+            max_size = 2000
+        elif max_size <= 0:
+            print("Maximale formaat moet groter zijn dan 0.")
+            return
+    except ValueError:
+        print("Ongeldige invoer voor maximale formaat.")
+        return
+
+    if not os.path.isdir(source):
+        print(f"Bronmap '{source}' bestaat niet.")
+        return
+    if not os.path.exists(destination):
+        os.makedirs(destination)
+
+    files = os.listdir(source)
+    print(f"Aantal bestanden gevonden in source: {len(files)}")
+
+    for filename in files:
+        filepath = os.path.join(source, filename)
+        if not os.path.isfile(filepath):
+            print(f"{filename} is geen bestand, wordt overgeslagen.")
+            continue
+
+        try:
+            with Image.open(filepath) as img:
+                print(f"Bezig met aanpassen van afbeelding: {filename}")
+                # Bereken nieuwe grootte binnen max_size
+                width, height = img.size
+                ratio = min(max_size / width, max_size / height, 1)  # 1 zorgt dat het niet groter wordt
+                new_width = int(width * ratio)
+                new_height = int(height * ratio)
+
+                if ratio < 1:
+                    img = img.resize((new_width, new_height), Image.LANCZOS)
+                
+                # Bewaar in uitvoermap met dezelfde bestandsnaam
+                save_path = os.path.join(destination, filename)
+                img.save(save_path)
+        except (IOError, OSError):
+            print(f"{filename} is geen afbeelding of kan niet worden geopend, wordt overgeslagen.")
+
+    print("Verwerking voltooid.")
+
+if __name__ == "__main__":
+    resize_images()
