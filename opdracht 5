@@ -1,0 +1,120 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from openpyxl import Workbook
+
+def save_to_excel(data, headers, filename):
+    wb = Workbook()
+    ws = wb.active
+    ws.append(headers)
+    for row in data:
+        ws.append(row)
+    wb.save(filename)
+
+def main():
+    branches_df = pd.read_csv('C:/git/python/Pythonontwerp/branches.csv')
+    bedrijven_df = pd.read_csv('C:/git/python/Pythonontwerp/bedrijven.csv')
+
+    while True:
+        print("Select a graph:")
+        print("1. Bar chart of companies per branch")
+        print("2. Pie chart of top 5 companies by turnover")
+        print("3. Pie chart of top 5 companies by profit in a city")
+        print("4. Line chart of profits for a company over years")
+        print("5. Pie chart of top 5 companies' turnover vs rest")
+        print("6. Pie chart of top 10 branches by turnover in a year")
+        print("7. Pie chart of top 10 branches by average profit (last 5 years)")
+
+        try:
+            choice = int(input("Enter choice (1-7): "))
+        except ValueError:
+            print("Invalid input, try again.")
+            continue
+
+        plt.clf()
+
+        if choice == 1:
+            branch_counts = bedrijven_df['branche'].value_counts()
+            branch_counts.plot(kind='bar')
+            plt.title("Companies per Branch")
+            plt.xlabel("Branch")
+            plt.ylabel("Number of Companies")
+
+            data = [(branch, count) for branch, count in branch_counts.items()]
+            save_to_excel(data, ["Branch", "Number of Companies"], "graph_data_1.xlsx")
+
+        elif choice == 2:
+            top_turnover = bedrijven_df.nlargest(5, 'omzet')
+            plt.pie(top_turnover['omzet'], labels=top_turnover['naam'], autopct='%1.1f%%')
+            plt.title("Top 5 Companies by Turnover")
+
+            data = [(row['naam'], row['omzet']) for _, row in top_turnover.iterrows()]
+            save_to_excel(data, ["Company", "Turnover"], "graph_data_2.xlsx")
+
+        elif choice == 3:
+            city = input("Enter city: ")
+            city_data = bedrijven_df[bedrijven_df['plaats'] == city].nlargest(5, 'winst')
+            plt.pie(city_data['winst'], labels=city_data['naam'], autopct='%1.1f%%')
+            plt.title(f"Top 5 Profits in {city}")
+
+            data = [(row['naam'], row['winst']) for _, row in city_data.iterrows()]
+            save_to_excel(data, ["Company", "Profit"], "graph_data_3.xlsx")
+
+        elif choice == 4:
+            company = input("Enter company name: ")
+            company_data = bedrijven_df[bedrijven_df['naam'] == company].sort_values('jaar')
+            if company_data.empty:
+                print("Company not found.")
+                continue
+            plt.plot(company_data['jaar'], company_data['winst'], marker='o')
+            plt.title(f"Profit Trend for {company}")
+            plt.xlabel("Year")
+            plt.ylabel("Profit")
+
+            data = [(row['jaar'], row['winst']) for _, row in company_data.iterrows()]
+            save_to_excel(data, ["Year", "Profit"], "graph_data_4.xlsx")
+
+        elif choice == 5:
+            top_sum = bedrijven_df.nlargest(5, 'omzet')['omzet'].sum()
+            rest_sum = bedrijven_df['omzet'].sum() - top_sum
+            plt.pie([top_sum, rest_sum], labels=['Top 5', 'Rest'], autopct='%1.1f%%')
+            plt.title("Top 5 vs Rest by Turnover")
+
+            data = [('Top 5', top_sum), ('Rest', rest_sum)]
+            save_to_excel(data, ["Category", "Turnover"], "graph_data_5.xlsx")
+
+        elif choice == 6:
+            try:
+                year = int(input("Enter year: "))
+            except ValueError:
+                print("Invalid year.")
+                continue
+
+            year_data = bedrijven_df[bedrijven_df['jaar'] == year].groupby('branche')['omzet'].sum().nlargest(10)
+            plt.pie(year_data, labels=year_data.index, autopct='%1.1f%%')
+            plt.title(f"Top 10 Branches by Turnover in {year}")
+
+            data = [(branch, turnover) for branch, turnover in year_data.items()]
+            save_to_excel(data, ["Branch", "Turnover"], "graph_data_6.xlsx")
+
+        elif choice == 7:
+            recent_years = bedrijven_df[bedrijven_df['jaar'] >= (bedrijven_df['jaar'].max() - 4)]
+            avg_profit = recent_years.groupby('branche')['winst'].mean().nlargest(10)
+            plt.pie(avg_profit, labels=avg_profit.index, autopct='%1.1f%%')
+            plt.title("Top 10 Branches by Average Profit (Last 5 Years)")
+
+            data = [(branch, profit) for branch, profit in avg_profit.items()]
+            save_to_excel(data, ["Branch", "Average Profit"], "graph_data_7.xlsx")
+
+        else:
+            print("Invalid choice, try again.")
+            continue
+
+        plt.savefig(f"graph_{choice}.png")
+        plt.show()
+
+        again = input("Generate another graph? (y/n): ")
+        if again.lower() != 'y':
+            break
+
+if __name__ == "__main__":
+    main()
